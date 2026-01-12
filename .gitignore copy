@@ -1,0 +1,9 @@
+node_modules
+dist
+out
+logPath_IS_UNDEFINED
+logs
+build-output
+.DS_Store
+.eslintcache
+*.log*
