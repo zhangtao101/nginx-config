@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app, dialog } from 'electron'
 import { readFile, writeFile, access, constants, readdir, mkdir, unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
@@ -492,8 +492,6 @@ http {
 
   // 选择目录
   async selectDirectory(mainWindow: any): Promise<{ success: boolean; path?: string; error?: string }> {
-    const { dialog } = require('electron')
-
     try {
       const result = await dialog.showOpenDialog(mainWindow, {
         properties: ['openDirectory'],
@@ -515,8 +513,6 @@ http {
 
   // 选择文件
   async selectFile(mainWindow: any, filters?: { name: string; extensions: string[] }[]): Promise<{ success: boolean; path?: string; error?: string }> {
-    const { dialog } = require('electron')
-
     try {
       const result = await dialog.showOpenDialog(mainWindow, {
         properties: ['openFile'],

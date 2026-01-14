@@ -7,7 +7,7 @@ const loading = ref(false)
 const autoRefresh = ref(false)
 const showConfirmDialog = ref(false)
 const maxLines = ref(5000)
-let refreshInterval: NodeJS.Timeout | null = null
+let refreshInterval: ReturnType<typeof setInterval> | null = null
 
 async function loadLogs() {
   try {
