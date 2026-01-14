@@ -9,7 +9,8 @@ declare global {
       selectNginxDir: () => Promise<{ success: boolean; path?: string; error?: string }>
       getConfigContent: () => Promise<string | null>
       saveConfig: (content: string) => Promise<{ success: boolean; error?: string }>
-      getLogs: () => Promise<{ access: string; error: string }>
+      getLogs: (maxLines?: number) => Promise<{ access: string; error: string }>
+      clearLogs: () => Promise<{ success: boolean; error?: string }>
       startNginx: () => Promise<{ success: boolean; output?: string; error?: string }>
       stopNginx: () => Promise<{ success: boolean; output?: string; error?: string }>
       reloadNginx: () => Promise<{ success: boolean; output?: string; error?: string }>

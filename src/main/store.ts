@@ -184,7 +184,7 @@ export class NginxStore {
     }
   }
 
-  async getLogs(): Promise<{ access: string; error: string }> {
+  async getLogs(maxLines: number = 5000): Promise<{ access: string; error: string }> {
     const nginxPath = await this.getNginxPath()
     if (!nginxPath) {
       return { access: '', error: '' }
@@ -200,11 +200,22 @@ export class NginxStore {
       for (const file of files) {
         const filePath = join(logsPath, file)
         try {
-          const content = await readFile(filePath, 'utf-8')
+          const fullContent = await readFile(filePath, 'utf-8')
+
+          // 如果内容太大，只读取最后 N 行
+          const lines = fullContent.split('\n')
+          const limitedLines = lines.length > maxLines
+            ? lines.slice(-maxLines)
+            : lines
+
+          const truncatedContent = lines.length > maxLines
+            ? `... 已显示最后 ${maxLines} 行 (总共 ${lines.length} 行) ...\n\n` + limitedLines.join('\n')
+            : fullContent
+
           if (file.includes('access')) {
-            accessContent = content
+            accessContent = truncatedContent
           } else if (file.includes('error')) {
-            errorContent = content
+            errorContent = truncatedContent
           }
         } catch {
           // 忽略读取失败的文件
@@ -214,6 +225,35 @@ export class NginxStore {
       return { access: accessContent, error: errorContent }
     } catch {
       return { access: '', error: '' }
+    }
+  }
+
+  async clearLogs(): Promise<{ success: boolean; error?: string }> {
+    const nginxPath = await this.getNginxPath()
+    if (!nginxPath) {
+      return { success: false, error: '未配置Nginx路径' }
+    }
+
+    const logsPath = join(nginxPath, 'logs')
+
+    try {
+      const files = await readdir(logsPath)
+      for (const file of files) {
+        if (file.includes('access') || file.includes('error')) {
+          const filePath = join(logsPath, file)
+          try {
+            await writeFile(filePath, '', 'utf-8')
+          } catch {
+            // 忽略清空失败的文件
+          }
+        }
+      }
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '清空日志失败'
+      }
     }
   }
 

@@ -1,9 +1,9 @@
 {
   "name": "nginx-config",
-  "version": "1.0.0",
-  "description": "An Electron application with Vue and TypeScript",
+  "version": "1.0.4",
+  "description": "Nginx配置可视化管理工具 - 提供直观的图形界面管理Nginx配置文件",
   "main": "./out/main/index.js",
-  "author": "example.com",
+  "author": "hjl",
   "homepage": "https://electron-vite.org",
   "scripts": {
     "format": "prettier --write .",

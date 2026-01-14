@@ -5,12 +5,14 @@ const logs = ref<{ access: string; error: string }>({ access: '', error: '' })
 const activeTab = ref<'access' | 'error'>('error')
 const loading = ref(false)
 const autoRefresh = ref(false)
+const showConfirmDialog = ref(false)
+const maxLines = ref(5000)
 let refreshInterval: NodeJS.Timeout | null = null
 
 async function loadLogs() {
   try {
     loading.value = true
-    logs.value = await window.api.getLogs()
+    logs.value = await window.api.getLogs(maxLines.value)
   } catch (err) {
     console.error('加载日志失败:', err)
   } finally {
@@ -32,8 +34,28 @@ function toggleAutoRefresh() {
   }
 }
 
-function clearLogs() {
-  logs.value = { access: '', error: '' }
+function openClearDialog() {
+  showConfirmDialog.value = true
+}
+
+async function confirmClearLogs() {
+  try {
+    const result = await window.api.clearLogs()
+    if (result.success) {
+      logs.value = { access: '', error: '' }
+    } else {
+      alert('清空日志失败: ' + (result.error || '未知错误'))
+    }
+  } catch (err) {
+    console.error('清空日志失败:', err)
+    alert('清空日志失败，请检查Nginx路径配置')
+  } finally {
+    showConfirmDialog.value = false
+  }
+}
+
+function cancelClearLogs() {
+  showConfirmDialog.value = false
 }
 
 defineExpose({
@@ -72,7 +94,7 @@ defineExpose({
           </svg>
           <span>{{ autoRefresh ? '停止自动刷新' : '自动刷新' }}</span>
         </button>
-        <button @click="clearLogs" class="btn btn-secondary">
+        <button @click="openClearDialog" class="btn btn-secondary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path
@@ -122,6 +144,23 @@ defineExpose({
           <polyline points="14 2 14 8 20 8"></polyline>
         </svg>
         <p>暂无日志数据</p>
+      </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div v-if="showConfirmDialog" class="dialog-overlay" @click.self="cancelClearLogs">
+      <div class="dialog">
+        <div class="dialog-header">
+          <h3>确认清空日志</h3>
+          <button @click="cancelClearLogs" class="dialog-close">&times;</button>
+        </div>
+        <div class="dialog-body">
+          <p>确定要清空所有日志文件吗？此操作不可恢复。</p>
+        </div>
+        <div class="dialog-footer">
+          <button @click="cancelClearLogs" class="btn btn-secondary">取消</button>
+          <button @click="confirmClearLogs" class="btn btn-danger">确认清空</button>
+        </div>
       </div>
     </div>
   </div>
@@ -308,5 +347,103 @@ defineExpose({
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.8125rem;
   line-height: 1.6;
+}
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  min-width: 400px;
+  max-width: 90%;
+  animation: dialogSlideIn 0.2s ease;
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.dialog-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.dialog-close:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.dialog-body {
+  padding: 1.5rem;
+}
+
+.dialog-body p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+}
+
+.btn-danger:hover {
+  box-shadow: 0 3px 8px rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
 }
 </style>

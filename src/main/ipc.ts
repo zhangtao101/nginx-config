@@ -153,8 +153,13 @@ export function registerIpcHandlers(mainWin: BrowserWindow) {
   })
 
   // 获取日志
-  ipcMain.handle('get-logs', async () => {
-    return await nginxStore.getLogs()
+  ipcMain.handle('get-logs', async (_, maxLines?: number) => {
+    return await nginxStore.getLogs(maxLines)
+  })
+
+  // 清空日志
+  ipcMain.handle('clear-logs', async () => {
+    return await nginxStore.clearLogs()
   })
 
   // 启动Nginx

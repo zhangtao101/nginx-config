@@ -451,6 +451,9 @@ async function saveSubConfig() {
     await loadSubConfigFiles()
     subConfigFilename.value = ''
     isCreatingSubConfig.value = false
+    // 保存成功后取消当前选中文件
+    selectedSubConfig.value = null
+    subConfigContent.value = ''
   } else {
     showMessage('error', '保存失败: ' + (result.error || '未知错误'))
   }
@@ -467,6 +470,9 @@ async function updateCurrentSubConfig() {
 
   if (result.success) {
     showMessage('success', '更新成功!')
+    // 更新成功后取消当前选中文件
+    selectedSubConfig.value = null
+    subConfigContent.value = ''
   } else {
     showMessage('error', '更新失败: ' + (result.error || '未知错误'))
   }
@@ -534,6 +540,25 @@ async function selectKeyFile() {
   if (result.success && result.path) {
     config.value.sslKey = result.path
   }
+}
+
+// 添加常用代理请求头
+function addCommonHeaders(location: LocationConfig) {
+  const commonHeaders = [
+    'Host $host',
+    'X-Real-IP $remote_addr',
+    'X-Forwarded-For $proxy_add_x_forwarded_for',
+    'X-Forwarded-Proto $scheme',
+    'X-Forwarded-Host $host',
+    'X-Forwarded-Port $server_port'
+  ]
+
+  for (const header of commonHeaders) {
+    if (!location.proxyHeaders.includes(header)) {
+      location.proxyHeaders.push(header)
+    }
+  }
+  showMessage('success', '已添加常用请求头')
 }
 
 // 重置配置
@@ -777,8 +802,8 @@ onMounted(async () => {
                 />
               </div>
 
-              <div v-if="location.useProxy && location.proxyHeaders.length > 0" class="form-group">
-                <label>代理请求头</label>
+              <div v-if="location.useProxy" class="form-group">
+                <label>代理请求头 (proxy_set_header)</label>
                 <div class="proxy-headers">
                   <div
                     v-for="(headerItem, hIndex) in location.proxyHeaders"
@@ -798,13 +823,24 @@ onMounted(async () => {
                       </svg>
                     </button>
                   </div>
-                  <button @click="location.proxyHeaders.push('')" class="btn-icon add-header">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </button>
+                  <div class="header-actions">
+                    <button @click="location.proxyHeaders.push('')" class="btn btn-secondary btn-sm">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      添加请求头
+                    </button>
+                    <button @click="addCommonHeaders(location)" class="btn btn-secondary btn-sm">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="13 2 13 9 20 9"></polyline>
+                      </svg>
+                      添加常用请求头
+                    </button>
+                  </div>
                 </div>
+                <div class="form-hint">格式: Host $host 或 X-Forwarded-For $proxy_add_x_forwarded_for</div>
               </div>
             </div>
           </div>
@@ -1319,6 +1355,14 @@ onMounted(async () => {
   color: #ef4444;
 }
 
+.form-hint {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-style: italic;
+}
+
 .input-with-button {
   display: flex;
   gap: 0.5rem;
@@ -1615,6 +1659,25 @@ onMounted(async () => {
   color: white;
 }
 
+.proxy-headers .header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.proxy-headers .btn-sm {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.proxy-headers .btn-sm svg {
+  width: 14px;
+  height: 14px;
+}
+
 .right-panel {
   background: white;
   border-radius: 1rem;
@@ -1879,6 +1942,16 @@ onMounted(async () => {
 
 .drawer-content .file-item.active {
   border-color: #667eea;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+}
+
+.drawer-content .file-item.active .file-info svg {
+  color: #667eea;
+}
+
+.drawer-content .file-item.active .file-info span {
+  color: #667eea;
+  font-weight: 600;
 }
 
 .drawer-content .empty-state {

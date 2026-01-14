@@ -14,7 +14,9 @@ const api = {
   // 保存配置文件
   saveConfig: (content: string) => ipcRenderer.invoke('save-config', content),
   // 获取日志
-  getLogs: () => ipcRenderer.invoke('get-logs'),
+  getLogs: (maxLines?: number) => ipcRenderer.invoke('get-logs', maxLines),
+  // 清空日志
+  clearLogs: () => ipcRenderer.invoke('clear-logs'),
   // 启动Nginx
   startNginx: () => ipcRenderer.invoke('start-nginx'),
   // 停止Nginx
