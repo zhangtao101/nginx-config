@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const emit = defineEmits<{
   'nginx-action': [action: string]
@@ -28,9 +28,7 @@ async function checkStatus(): Promise<void> {
 async function startNginx(): Promise<void> {
   try {
     starting.value = true
-    console.log('[1] Starting Nginx, starting:', starting.value)
     const result = await window.api.startNginx()
-    console.log('[2] Start result:', result)
 
     if (result.success) {
       message.value = result.output || '启动成功'
@@ -38,11 +36,8 @@ async function startNginx(): Promise<void> {
       emit('nginx-action', 'start')
 
       // 等待一段时间让Nginx启动，然后检查状态
-      console.log('[3] Waiting 1s...')
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      console.log('[4] After wait, checking status...')
       await checkStatus()
-      console.log('[5] Status check completed')
 
       setTimeout(() => {
         message.value = ''
@@ -53,15 +48,10 @@ async function startNginx(): Promise<void> {
       messageType.value = 'error'
     }
   } catch (err) {
-    console.error('[ERROR] Start Nginx error:', err)
     message.value = err instanceof Error ? err.message : '启动失败'
     messageType.value = 'error'
   } finally {
-    console.log('[FINALLY] Setting starting to false, current:', starting.value)
     starting.value = false
-    console.log('[FINALLY] After setting:', starting.value)
-    await nextTick()
-    console.log('[FINALLY] After nextTick:', starting.value)
   }
 }
 

@@ -139,10 +139,26 @@ function applyTemplate(newTemplate: string) {
   }
 }
 
+// 规范化代理目标URL
+function normalizeProxyUrl(url: string): string {
+  if (!url) return url
+
+  // 去除首尾空格
+  const trimmed = url.trim()
+
+  // 如果已经以 http:// 或 https:// 开头,直接返回
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed
+  }
+
+  // 否则默认添加 http://
+  return `http://${trimmed}`
+}
+
 // 生成配置文件
 const generatedConfig = computed(() => {
   let nginxConfig = `server {
-    listen ${config.value.listen};
+    listen ${config.value.listen}${config.value.sslEnabled ? ' ssl' : ''};
     server_name ${config.value.serverName};
 `
 
@@ -180,8 +196,9 @@ const generatedConfig = computed(() => {
 
     // proxy 配置
     if (location.useProxy && location.proxyTarget) {
+      const normalizedUrl = normalizeProxyUrl(location.proxyTarget)
       nginxConfig += `
-        proxy_pass ${location.proxyTarget};`
+        proxy_pass ${normalizedUrl};`
       if (location.proxyHeaders.length > 0) {
         for (const header of location.proxyHeaders) {
           nginxConfig += `
@@ -443,7 +460,13 @@ async function saveSubConfig() {
     return
   }
 
-  const filename = subConfigFilename.value.trim()
+  let filename = subConfigFilename.value.trim()
+
+  // 如果文件名没有 .conf 后缀,自动补全
+  if (!filename.toLowerCase().endsWith('.conf')) {
+    filename += '.conf'
+  }
+
   const result = await window.api.saveSubConfig(filename, generatedConfig.value)
 
   if (result.success) {
@@ -1952,6 +1975,10 @@ onMounted(async () => {
 .drawer-content .file-item.active .file-info span {
   color: #667eea;
   font-weight: 600;
+}
+
+.drawer-content .file-item.active .delete-btn svg {
+  color: #ef4444;
 }
 
 .drawer-content .empty-state {
